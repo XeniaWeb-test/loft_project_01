@@ -1,5 +1,6 @@
 <?php
 
+require_once('config.php');
 require_once('src/functions.php');
 
 if (!empty($_POST)) {
@@ -54,9 +55,9 @@ if (!empty($_POST)) {
         $forAddress[] = $floor;
     }
     $address = implode(', ', $forAddress);
-
+//    $dns = DB_TYPE . ':host=' . DB_HOST . ';dbname=' . DB_NAME;
     try{
-        $pdo = new PDO("mysql:host=127.0.0.1;dbname=burgers", 'root');
+        $pdo = new PDO(DB_TYPE . ':host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASSWORD);
     } catch (PDOException $e) {
         echo $e->getMessage();
         die;
@@ -76,35 +77,42 @@ if (!empty($_POST)) {
             echo $pdo->errorInfo(); die;
         }
     }
+
     $query = $pdo->prepare("SELECT id FROM users WHERE email = :email");
     $query->execute(['email' => $email]);
     if (!$query) {
         print_r($pdo->errorInfo()); die;
     }
-
     $user = $query->fetch(PDO::FETCH_UNIQUE);
     $user_id = $user['id'];
+
     $description = $comment ?? null;
+
     $query = $pdo->prepare("INSERT into orders (user_id, contacts, description) VALUES (:user_id, :contacts, :description)");
     $query->execute(['user_id' => $user_id, 'contacts' => $address, 'description' => $description]);
     if (!$query) {
         echo $pdo->errorInfo(); die;
     }
+    $order_id = $pdo->lastInsertId();
+    $query = $pdo-> prepare("SELECT count(*) FROM orders WHERE user_id = :user_id");
+    $query->execute(['user_id' => $user_id]);
+    $order_count = (int)$query->fetch(PDO::FETCH_COLUMN);
 
+    $content = [];
+    $content[] = 'Заказ № ' . $order_id . PHP_EOL . PHP_EOL;
+    $content[] = 'Ваш заказ будет доставлен по адресу: ' . $address . PHP_EOL;
+    $content[] = 'DarkBeefBurger за 500 рублей, 1 шт' . PHP_EOL . PHP_EOL;
+    if ($order_count === 1) {
+        $content[] = 'Спасибо - это ваш первый заказ!';
+    } elseif ($order_count > 1) {
+        $content[] = 'Спасибо! Это уже ваш ' . $order_count . '-й заказ!';
+    }
 
-
-
-
-    // Фильтрация валидация данных - присутствует необходимые переменные - записать в переменную
-    // получаем пользователя по емайл - получить id пользователя из базы
-    // если юзера еще нет, то добавляем юзера в базу и тогда получаем id
-    // добавляем заказ в табл ордер
-    // отправляем письмо пользователю  - записать тело письма в файл
-
+    $dir_name = 'orders/' . date("Ymd_His");
+        mkdir($dir_name, 0777, true);
+    file_put_contents($dir_name . '/mail_text.txt', implode('', $content));
 }
 
-$page_content = include_template('layout.php', [
-
-]);
+$page_content = include_template('layout.php', []);
 
 print($page_content);
