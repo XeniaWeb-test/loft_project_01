@@ -55,7 +55,7 @@ if (!empty($_POST)) {
         $forAddress[] = $floor;
     }
     $address = implode(', ', $forAddress);
-//    $dns = DB_TYPE . ':host=' . DB_HOST . ';dbname=' . DB_NAME;
+
     try{
         $pdo = new PDO(DB_TYPE . ':host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASSWORD);
     } catch (PDOException $e) {
