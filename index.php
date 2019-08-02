@@ -66,7 +66,7 @@ if (!empty($_POST)) {
     $query = $pdo->prepare("SELECT id FROM users WHERE email = :email");
     $query->execute(['email' => $email]);
     if (!$query) {
-        echo $pdo->errorInfo(); die;
+        echo 'Введите существующий Email!'; die;
     }
 
     $user = $query->fetch(PDO::FETCH_UNIQUE);
@@ -74,14 +74,14 @@ if (!empty($_POST)) {
         $query = $pdo->prepare("INSERT into users (user_name, phone, email) VALUES (:user_name, :phone, :email)");
         $query->execute(['user_name' => $user_name, 'phone' => $phone, 'email' => $email]);
         if (!$query) {
-            echo $pdo->errorInfo(); die;
+            echo 'Введите корректную информацию!'; die;
         }
     }
 
     $query = $pdo->prepare("SELECT id FROM users WHERE email = :email");
     $query->execute(['email' => $email]);
     if (!$query) {
-        print_r($pdo->errorInfo()); die;
+        echo 'Введите существующий Email!'; die;
     }
     $user = $query->fetch(PDO::FETCH_UNIQUE);
     $user_id = $user['id'];
@@ -91,7 +91,7 @@ if (!empty($_POST)) {
     $query = $pdo->prepare("INSERT into orders (user_id, contacts, description) VALUES (:user_id, :contacts, :description)");
     $query->execute(['user_id' => $user_id, 'contacts' => $address, 'description' => $description]);
     if (!$query) {
-        echo $pdo->errorInfo(); die;
+        echo 'Введите корректную информацию!'; die;
     }
     $order_id = $pdo->lastInsertId();
     $query = $pdo-> prepare("SELECT count(*) FROM orders WHERE user_id = :user_id");
@@ -108,9 +108,12 @@ if (!empty($_POST)) {
         $content[] = 'Спасибо! Это уже ваш ' . $order_count . '-й заказ!';
     }
 
-    $dir_name = 'orders/' . date("Ymd_His");
+    $dir_name = 'orders/' . date("Ymd");
+    if(!is_dir($dir_name)){
         mkdir($dir_name, 0777, true);
-    file_put_contents($dir_name . '/mail_text.txt', implode('', $content));
+    }
+    $fileName = $dir_name . '/order_' . $order_id . '.txt';
+    file_put_contents($fileName, implode('', $content));
 }
 
 $page_content = include_template('layout.php', []);
